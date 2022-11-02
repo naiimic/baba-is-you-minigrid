@@ -42,7 +42,7 @@ setup(
         "gym==0.25.0",
         "numpy>=1.18.0",
         "matplotlib>=3.0",
-        "python-opencv"
+        "opencv-python"
     ],
     python_requires=">=3.7",
     tests_require=extras["testing"],
