@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 
 from .core.flexible_world_object import FBall, FWall, RuleProperty, RuleIs, RuleObject, Baba
