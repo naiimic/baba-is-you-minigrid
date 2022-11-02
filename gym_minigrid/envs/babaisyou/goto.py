@@ -64,11 +64,12 @@ class GoToObjEnv(BaseGridEnv):
         # Generate the surrounding walls
         self.grid.wall_rect(0, 0, width, height)
 
-        self.put_obj(FBall(), *self.ball_pos)
+        # self.put_obj(FBall(), *self.ball_pos)
 
         self.put_rule(obj='baba', property='is_agent', positions=[(1, 1), (2, 1), (3, 1)])
         self.put_rule(obj='fball', property='is_goal', positions=self.rule_pos, can_push=self.push_rule_block)
 
+        self.place_obj(FBall())
         self.place_obj(Baba())
         self.place_agent()
 
