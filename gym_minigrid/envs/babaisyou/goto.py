@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Tuple
+
 import numpy as np
 
 from .core.flexible_world_object import FBall, FWall, RuleProperty, RuleIs, RuleObject, Baba
@@ -7,9 +9,9 @@ from .core.utils import grid_random_position
 from gym_minigrid.minigrid import MiniGridEnv, MissionSpace, Grid
 from ...babaisyou import BabaIsYouGrid, BabaIsYouEnv
 
-RuleObjPos = tuple[int, int]
-RuleIsPos = tuple[int, int]
-RulePropPos = tuple[int, int]
+RuleObjPos = Tuple[int, int]
+RuleIsPos = Tuple[int, int]
+RulePropPos = Tuple[int, int]
 
 
 class BaseGridEnv(BabaIsYouEnv):
