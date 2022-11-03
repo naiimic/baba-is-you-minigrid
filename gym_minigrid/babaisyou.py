@@ -361,9 +361,13 @@ class BabaIsYouEnv(gym.Env):
         # Compute the ruleset for the generated grid
         self._ruleset = extract_ruleset(self.grid)
         # make the ruleset accessible to all FlexibleWorlObj (not working for objects added after reset is called)
-        for e in self.grid:
-            if hasattr(e, "set_ruleset_getter"):
-                e.set_ruleset_getter(self.get_ruleset)
+        # for e in self.grid:
+        #     if hasattr(e, "set_ruleset_getter"):
+        #         e.set_ruleset_getter(self.get_ruleset)
+        for e_list in self.grid.grid:
+            for e in e_list:
+                if hasattr(e, "set_ruleset_getter"):
+                    e.set_ruleset_getter(self.get_ruleset)
 
         # These fields should be defined by _gen_grid
         assert self.agent_pos is not None
@@ -420,6 +424,9 @@ class BabaIsYouEnv(gym.Env):
             "box": "B",
             "goal": "G",
             "lava": "V",
+            "rule_object": "RO",
+            "rule_is": "IS",
+            "rule_property": "RP"
         }
 
         # Map agent's direction to short string

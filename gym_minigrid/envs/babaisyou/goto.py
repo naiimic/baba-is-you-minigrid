@@ -36,16 +36,19 @@ def random_rule_pos(size, margin):
 
 
 class GoToObjEnv(BaseGridEnv):
-    def __init__(self, size=8, agent_start_dir=0, random_rule_position=False, push_rule_block=False, **kwargs):
+    def __init__(self, size=8, agent_start_dir=0, rdm_rule_pos=False, rdm_ball_pos=False, rdm_agent_pos=False,
+                 push_rule_block=False, **kwargs):
         self.size = size
         self.agent_start_dir = agent_start_dir
-        self.random_rule_position = random_rule_position
+        self.rdm_rule_pos = rdm_rule_pos
+        self.rdm_ball_pos = rdm_ball_pos
+        self.rdm_agent_pos = rdm_agent_pos
         self.push_rule_block = push_rule_block
         super().__init__(size=size, **kwargs)
 
     def _gen_grid(self, width, height):
         # rule blocks position
-        if self.random_rule_position:
+        if self.rdm_rule_pos:
             # self.rule_pos = random_position(self.size, n_samples=3, margin=3)
             self.rule_pos = random_rule_pos(self.size, margin=2)
         else:
@@ -69,8 +72,15 @@ class GoToObjEnv(BaseGridEnv):
         self.put_rule(obj='baba', property='is_agent', positions=[(1, 1), (2, 1), (3, 1)])
         self.put_rule(obj='fball', property='is_goal', positions=self.rule_pos, can_push=self.push_rule_block)
 
-        self.place_obj(FBall())
-        self.place_obj(Baba())
+        if self.rdm_ball_pos:
+            self.place_obj(FBall())
+        else:
+            self.put_obj(FBall(), 4, 4)
+
+        if self.rdm_agent_pos:
+            self.place_obj(Baba())
+        else:
+            self.put_obj(Baba(), 2, 5)
         self.place_agent()
 
 

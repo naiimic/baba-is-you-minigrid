@@ -42,3 +42,15 @@ def test_lose():
     obs, reward, done, info = env.step(env.actions.right)
     assert done
     assert reward < 0
+
+
+# def test_encoding():
+#     env = TestWinLoseEnv()
+#     obs = env.reset()
+#     print(obs.shape)
+#     import matplotlib.pyplot as plt
+#     import numpy as np
+#     print(np.min(obs), np.max(obs))
+#     plt.imshow(obs*10)
+#     plt.show()
+
