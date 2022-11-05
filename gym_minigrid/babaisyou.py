@@ -384,7 +384,7 @@ class BabaIsYouEnv(gym.Env):
         self.step_count = 0
 
         # Return first observation
-        obs = self.grid.encode()
+        obs = self.gen_obs()
 
         if not return_info:
             return obs
@@ -708,9 +708,12 @@ class BabaIsYouEnv(gym.Env):
         if self.step_count >= self.max_steps:
             done = True
 
-        obs = self.grid.encode()
+        obs = self.gen_obs()
 
         return obs, reward, done, {}
+
+    def gen_obs(self):
+        return self.grid.encode()
 
     def get_obs_render(self, obs, tile_size=TILE_PIXELS // 2):
         """

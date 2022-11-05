@@ -36,14 +36,29 @@ def random_rule_pos(size, margin):
 
 
 class GoToObjEnv(BaseGridEnv):
+    OBJECT_TO_IDX = {
+        "empty": 0,
+        "wall": 1,
+        "fball": 2,
+        "baba": 3
+    }
+    unencoded_object = {
+        "rule_object": 1,
+        "rule_is": 1,
+        "rule_property": 1
+    }
+    COLOR_TO_IDX = {}
+    STATE_TO_IDX = {}
+
     def __init__(self, size=8, agent_start_dir=0, rdm_rule_pos=False, rdm_ball_pos=False, rdm_agent_pos=False,
-                 push_rule_block=False, **kwargs):
+                 push_rule_block=False, n_balls=1, **kwargs):
         self.size = size
         self.agent_start_dir = agent_start_dir
         self.rdm_rule_pos = rdm_rule_pos
         self.rdm_ball_pos = rdm_ball_pos
         self.rdm_agent_pos = rdm_agent_pos
         self.push_rule_block = push_rule_block
+        self.n_balls = n_balls
         super().__init__(size=size, **kwargs)
 
     def _gen_grid(self, width, height):
@@ -52,7 +67,8 @@ class GoToObjEnv(BaseGridEnv):
             # self.rule_pos = random_position(self.size, n_samples=3, margin=3)
             self.rule_pos = random_rule_pos(self.size, margin=2)
         else:
-            self.rule_pos = [(2, 2), (3, 2), (4, 2)]
+            # self.rule_pos = [(2, 2), (3, 2), (4, 2)]
+            self.rule_pos = [(1, 2), (2, 2), (3, 2)]
 
         # agent and ball positions
         agent_start_pos, self.ball_pos = grid_random_position(self.size, n_samples=2, margin=1)
@@ -73,7 +89,8 @@ class GoToObjEnv(BaseGridEnv):
         self.put_rule(obj='fball', property='is_goal', positions=self.rule_pos, can_push=self.push_rule_block)
 
         if self.rdm_ball_pos:
-            self.place_obj(FBall())
+            for i in range(self.n_balls):
+                self.place_obj(FBall())
         else:
             self.put_obj(FBall(), 4, 4)
 
@@ -83,9 +100,31 @@ class GoToObjEnv(BaseGridEnv):
             self.put_obj(Baba(), 2, 5)
         self.place_agent()
 
+    def gen_obs(self):
+        array = np.zeros((self.grid.width, self.grid.height, 3), dtype="uint8")
+
+        for i in range(self.grid.width):
+            for j in range(self.grid.height):
+                v = self.grid.get(i, j)
+
+                if v is None:
+                    array[i, j, 0] = self.OBJECT_TO_IDX["empty"]
+                    array[i, j, 1] = 0
+                    array[i, j, 2] = 0
+
+                else:
+                    if v.type in self.OBJECT_TO_IDX:
+                        idx = self.OBJECT_TO_IDX[v.type]
+                    else:
+                        idx = self.unencoded_object[v.type]
+                    array[i, j, :] = [idx, 0, 0]
+
+        return array
+
 
 class GoToWinObjEnv(BaseGridEnv):
-    def __init__(self, size=8, **kwargs):
+    def __init__(self, size=6, rdm_pos=False, **kwargs):
+        self.rdm_pos = rdm_pos
         super().__init__(size=size, **kwargs)
 
     def _gen_grid(self, width, height):
@@ -102,11 +141,24 @@ class GoToWinObjEnv(BaseGridEnv):
         wall_property = 'is_defeat' if is_ball_win else 'is_goal'
         self.put_rule('fball', ball_property, self.rule1_pos)
         self.put_rule('fwall', wall_property, self.rule2_pos)
+        self.put_rule(obj='baba', property='is_agent', positions=[(1, 3), (2, 3), (3, 3)])
 
-        wall_pos, ball_pos = grid_random_position(self.size, n_samples=2, margin=1,
-                                                  exclude_pos=[*self.rule1_pos, *self.rule2_pos])
 
-        self.put_obj(FWall(), *wall_pos)
-        self.put_obj(FBall(), *ball_pos)
+        # wall_pos, ball_pos = grid_random_position(self.size, n_samples=2, margin=1,
+        #                                           exclude_pos=[*self.rule1_pos, *self.rule2_pos])
 
-        self.place_agent(rand_dir=True)
+        if not self.rdm_pos:
+            wall_pos = (1, 4)
+            ball_pos = (3, 4)
+            baba_pos = (2, 4)
+            self.put_obj(FWall(), *wall_pos)
+            self.put_obj(FBall(), *ball_pos)
+            self.put_obj(Baba(), *baba_pos)
+        else:
+            self.place_obj(FWall())
+            self.place_obj(FBall())
+            self.place_obj(Baba())
+
+        # self.agent_pos = (2, 4)
+        # self.agent_dir = 0
+        self.place_agent()

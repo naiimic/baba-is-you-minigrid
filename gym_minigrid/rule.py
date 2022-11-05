@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Iterable
 
 # ruleset = defaultdict(dict)
 #
@@ -62,6 +63,9 @@ def extract_ruleset(grid):
     ruleset = defaultdict(dict)
     # loop through all 'is' blocks
     # for k, e in enumerate(grid.grid):
+    if not isinstance(grid, Iterable):
+        grid = grid.grid
+
     for k, e in enumerate(grid):
         if e is not None and e.type == 'rule_is':
             i, j = k % grid.width, k // grid.width
