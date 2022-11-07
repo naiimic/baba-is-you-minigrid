@@ -361,9 +361,13 @@ class BabaIsYouEnv(gym.Env):
         # Compute the ruleset for the generated grid
         self._ruleset = extract_ruleset(self.grid)
         # make the ruleset accessible to all FlexibleWorlObj (not working for objects added after reset is called)
-        for e in self.grid:
-            if hasattr(e, "set_ruleset_getter"):
-                e.set_ruleset_getter(self.get_ruleset)
+        # for e in self.grid:
+        #     if hasattr(e, "set_ruleset_getter"):
+        #         e.set_ruleset_getter(self.get_ruleset)
+        for e_list in self.grid.grid:
+            for e in e_list:
+                if hasattr(e, "set_ruleset_getter"):
+                    e.set_ruleset_getter(self.get_ruleset)
 
         # These fields should be defined by _gen_grid
         assert self.agent_pos is not None
@@ -380,7 +384,7 @@ class BabaIsYouEnv(gym.Env):
         self.step_count = 0
 
         # Return first observation
-        obs = self.grid.encode()
+        obs = self.gen_obs()
 
         if not return_info:
             return obs
@@ -420,6 +424,9 @@ class BabaIsYouEnv(gym.Env):
             "box": "B",
             "goal": "G",
             "lava": "V",
+            "rule_object": "RO",
+            "rule_is": "IS",
+            "rule_property": "RP"
         }
 
         # Map agent's direction to short string
@@ -701,9 +708,12 @@ class BabaIsYouEnv(gym.Env):
         if self.step_count >= self.max_steps:
             done = True
 
-        obs = self.grid.encode()
+        obs = self.gen_obs()
 
         return obs, reward, done, {}
+
+    def gen_obs(self):
+        return self.grid.encode()
 
     def get_obs_render(self, obs, tile_size=TILE_PIXELS // 2):
         """

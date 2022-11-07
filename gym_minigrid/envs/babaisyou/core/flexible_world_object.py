@@ -167,7 +167,6 @@ class Baba(FlexibleWorldObj):
         super().__init__("baba", color)
 
     def render(self, img):
-        print("baba", self.dir)
         tri_fn = point_in_triangle(
             (0.12, 0.19),
             (0.87, 0.50),
