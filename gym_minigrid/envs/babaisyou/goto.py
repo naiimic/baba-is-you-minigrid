@@ -36,19 +36,19 @@ def random_rule_pos(size, margin):
 
 
 class GoToObjEnv(BaseGridEnv):
-    OBJECT_TO_IDX = {
-        "empty": 0,
-        "wall": 1,
-        "fball": 2,
-        "baba": 3
-    }
-    unencoded_object = {
-        "rule_object": 1,
-        "rule_is": 1,
-        "rule_property": 1
-    }
-    COLOR_TO_IDX = {}
-    STATE_TO_IDX = {}
+    # OBJECT_TO_IDX = {
+    #     "empty": 0,
+    #     "wall": 1,
+    #     "fball": 2,
+    #     "baba": 3
+    # }
+    # unencoded_object = {
+    #     "rule_object": 1,
+    #     "rule_is": 1,
+    #     "rule_property": 1
+    # }
+    # COLOR_TO_IDX = {}
+    # STATE_TO_IDX = {}
 
     def __init__(self, size=8, agent_start_dir=0, rdm_rule_pos=False, rdm_ball_pos=False, rdm_agent_pos=False,
                  push_rule_block=False, n_balls=1, **kwargs):
@@ -100,32 +100,52 @@ class GoToObjEnv(BaseGridEnv):
             self.put_obj(Baba(), 2, 5)
         self.place_agent()
 
-    def gen_obs(self):
-        array = np.zeros((self.grid.width, self.grid.height, 3), dtype="uint8")
-
-        for i in range(self.grid.width):
-            for j in range(self.grid.height):
-                v = self.grid.get(i, j)
-
-                if v is None:
-                    array[i, j, 0] = self.OBJECT_TO_IDX["empty"]
-                    array[i, j, 1] = 0
-                    array[i, j, 2] = 0
-
-                else:
-                    if v.type in self.OBJECT_TO_IDX:
-                        idx = self.OBJECT_TO_IDX[v.type]
-                    else:
-                        idx = self.unencoded_object[v.type]
-                    array[i, j, :] = [idx, 0, 0]
-
-        return array
+    # def gen_obs(self):
+    #     array = np.zeros((self.grid.width, self.grid.height, 3), dtype="uint8")
+    #
+    #     for i in range(self.grid.width):
+    #         for j in range(self.grid.height):
+    #             v = self.grid.get(i, j)
+    #
+    #             if v is None:
+    #                 array[i, j, 0] = self.OBJECT_TO_IDX["empty"]
+    #                 array[i, j, 1] = 0
+    #                 array[i, j, 2] = 0
+    #
+    #             else:
+    #                 if v.type in self.OBJECT_TO_IDX:
+    #                     idx = self.OBJECT_TO_IDX[v.type]
+    #                 else:
+    #                     idx = self.unencoded_object[v.type]
+    #                 array[i, j, :] = [idx, 0, 0]
+    #
+    #     return array
 
 
 class GoToWinObjEnv(BaseGridEnv):
     def __init__(self, size=6, rdm_pos=False, **kwargs):
         self.rdm_pos = rdm_pos
         super().__init__(size=size, **kwargs)
+
+    def encode_rules(self, mode='matrix'):
+        ruleset = self.get_ruleset()
+        objects = {'fball': 0, 'fwall': 1, 'baba': 2}
+        properties = {'is_goal': 0, 'is_defeat': 1, 'is_agent': 2}
+
+        rule_encoding = np.zeros((len(objects), len(properties)))
+        rules = []
+        for property in ruleset.keys():
+            for obj in ruleset[property]:
+                if ruleset[property][obj]:
+                    rule_encoding[objects[obj], properties[property]] = 1
+                    rules.append((objects[obj], properties[property]))
+
+        if mode == 'matrix':
+            return rule_encoding
+        elif mode == 'list':
+            return rules
+        else:
+            raise ValueError
 
     def _gen_grid(self, width, height):
         self.grid = BabaIsYouGrid(width, height)
@@ -142,7 +162,6 @@ class GoToWinObjEnv(BaseGridEnv):
         self.put_rule('fball', ball_property, self.rule1_pos)
         self.put_rule('fwall', wall_property, self.rule2_pos)
         self.put_rule(obj='baba', property='is_agent', positions=[(1, 3), (2, 3), (3, 3)])
-
 
         # wall_pos, ball_pos = grid_random_position(self.size, n_samples=2, margin=1,
         #                                           exclude_pos=[*self.rule1_pos, *self.rule2_pos])
