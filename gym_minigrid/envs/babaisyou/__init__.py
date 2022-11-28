@@ -4,6 +4,8 @@ from gym_minigrid.envs.babaisyou.goto import (
 )
 from gym_minigrid.envs.babaisyou.changerule import (
     ChangeRuleEnv,
-    TestRuleEnv
+    TestRuleEnv,
+    MoveBlockEnv,
+    MakeRuleEnv
 )
 from gym_minigrid.envs.babaisyou.test import TestEnv
