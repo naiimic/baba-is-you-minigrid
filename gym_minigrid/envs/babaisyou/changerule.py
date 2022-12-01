@@ -1,7 +1,7 @@
 from gym_minigrid.babaisyou import BabaIsYouEnv, BabaIsYouGrid
 from gym_minigrid.envs.babaisyou.core.flexible_world_object import FBall, FWall, Baba, RuleObject, RuleIs, RuleProperty
 from gym_minigrid.envs.babaisyou.core.utils import grid_random_position
-from gym_minigrid.envs.babaisyou.goto import BaseGridEnv
+from gym_minigrid.envs.babaisyou.goto import BaseGridEnv, random_rule_pos
 from gym_minigrid.minigrid import Grid, MissionSpace, MiniGridEnv
 
 
@@ -94,3 +94,61 @@ class TestRuleEnv(BabaIsYouEnv):
 
         self.place_obj(Baba())
         self.place_agent()
+
+
+class MoveBlockEnv(BabaIsYouEnv):
+    def __init__(self, **kwargs):
+        self.goal_pos = (3, 4)
+        self.goal_obj = RuleProperty('is_goal')
+        self.size = kwargs.get('size', 7)
+        super().__init__(grid_size=self.size, max_steps=4*self.size*self.size, **kwargs)
+
+    def _gen_grid(self, width, height):
+        self.grid = BabaIsYouGrid(width, height)
+        self.grid.wall_rect(0, 0, width, height)
+
+        self.put_obj(RuleObject('baba'), 1, 1)
+        self.put_obj(RuleIs(), 2, 1)
+        self.put_obj(RuleProperty('is_agent'), 3, 1)
+
+        self.place_obj(self.goal_obj, top=(2, 2), size=[self.size-4, self.size-4])
+
+        self.place_obj(Baba())
+        self.place_agent()
+
+    def reward(self):
+        if self.grid.get(*self.goal_pos) == self.goal_obj:
+            return self._reward(), True
+        else:
+            return 0, False
+
+
+class MakeRuleEnv(BabaIsYouEnv):
+    def __init__(self, **kwargs):
+        self.rule_obj= RuleObject('fball')
+        self.rule_is = RuleIs()
+        self.rule_prop = RuleProperty('is_goal')
+        self.size = kwargs.get('size', 7)
+        super().__init__(grid_size=self.size, max_steps=4*self.size*self.size, **kwargs)
+
+    def _gen_grid(self, width, height):
+        self.grid = BabaIsYouGrid(width, height)
+        self.grid.wall_rect(0, 0, width, height)
+
+        self.put_obj(RuleObject('baba'), 1, 1)
+        self.put_obj(RuleIs(), 2, 1)
+        self.put_obj(RuleProperty('is_agent'), 3, 1)
+
+        self.place_obj(self.rule_obj, top=(2, 2), size=[self.size-4, self.size-4])
+        self.place_obj(self.rule_is, top=(2, 2), size=[self.size-4, self.size-4])
+        self.place_obj(self.rule_prop, top=(2, 2), size=[self.size-4, self.size-4])
+
+        self.place_obj(Baba())
+        self.place_agent()
+
+    def reward(self):
+        ruleset = self.get_ruleset()
+        if ruleset['is_goal'].get('fball', False):
+            return self._reward(), True
+        else:
+            return 0, False

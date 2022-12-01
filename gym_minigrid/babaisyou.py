@@ -86,6 +86,16 @@ class BabaIsYouGrid:
 
         return self.grid[j * self.width + i][-1]
 
+    def get_under(self, i, j):
+        # return the second object in the cell
+        assert i >= 0 and i < self.width
+        assert j >= 0 and j < self.height
+
+        if len(self.grid[j * self.width + i]) <= 1:
+            return None
+        else:
+            return self.grid[j * self.width + i][-2]
+
     def __iter__(self):
         for elem in self.grid.__iter__():
             yield elem[-1]
@@ -209,16 +219,14 @@ class BabaIsYouGrid:
             for j in range(self.height):
                 if vis_mask[i, j]:
                     v = self.get(i, j)
-
-                    if v is None:
-                        array[i, j, 0] = OBJECT_TO_IDX["empty"]
-                        array[i, j, 1] = 0
-                        array[i, j, 2] = 0
-
-                    else:
-                        array[i, j, :] = v.encode()
-
+                    array[i, j] = self.encode_cell(v)
         return array
+
+    def encode_cell(self, v):
+        if v is None:
+            return np.array([OBJECT_TO_IDX["empty"], 0, 0])
+        else:
+            return v.encode()
 
     @staticmethod
     def decode(array):
@@ -675,6 +683,7 @@ class BabaIsYouEnv(gym.Env):
                 if e is not None and (e.is_agent() or e.is_move()):
                     e.has_moved = False
 
+            # TODO: stack objects if both agent and another character are pushing objects on the same cell at the same time
             # movements = []
             # the agent moves first
             for k, e in enumerate(self.grid):
@@ -684,6 +693,7 @@ class BabaIsYouEnv(gym.Env):
                     new_pos, is_win, is_lose = self.move(pos, self.dir_vec)
                     # movements.append((pos, new_pos))
                     e.has_moved = True
+                    self.agent_pos = new_pos  # TODO: works when the agent is just one cell in the env
 
             # move other objects
             for k, e in enumerate(self.grid):
@@ -696,12 +706,11 @@ class BabaIsYouEnv(gym.Env):
             # for (pos, new_pos) in movements:
             #     self.change_obj_pos(pos, new_pos)
 
-            if is_win:
-                done = True
-                reward = self._reward()
-            elif is_lose:
-                done = True
-                reward = -1
+            # win/lose based on the rules active in the env
+            self.is_win = is_win
+            self.is_lose = is_lose
+
+            reward, done = self.reward()
 
             self._ruleset = extract_ruleset(self.grid)
 
@@ -711,6 +720,18 @@ class BabaIsYouEnv(gym.Env):
         obs = self.gen_obs()
 
         return obs, reward, done, {}
+
+    def reward(self):
+        if self.is_win:
+            done = True
+            reward = self._reward()
+        elif self.is_lose:
+            done = True
+            reward = -1
+        else:
+            done = False
+            reward = 0
+        return reward, done
 
     def gen_obs(self):
         return self.grid.encode()
