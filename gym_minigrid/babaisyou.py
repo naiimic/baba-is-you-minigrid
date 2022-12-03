@@ -80,16 +80,24 @@ class BabaIsYouGrid:
             # stack objects
             self.grid[idx].append(v)
 
-    def get(self, i, j):
-        assert i >= 0 and i < self.width
-        assert j >= 0 and j < self.height
+    def get(self, i, j, z=-1):
+        """
+        Args:
+            z: return the object at the top if -1
+        """
+        assert 0 <= i < self.width
+        assert 0 <= j < self.height
 
-        return self.grid[j * self.width + i][-1]
+        min_len = z+1 if z >= 0 else -z
+        if len(self.grid[j * self.width + i]) <= min_len:
+            return None
+
+        return self.grid[j * self.width + i][z]
 
     def get_under(self, i, j):
         # return the second object in the cell
-        assert i >= 0 and i < self.width
-        assert j >= 0 and j < self.height
+        assert 0 <= i < self.width
+        assert 0 <= j < self.height
 
         if len(self.grid[j * self.width + i]) <= 1:
             return None
@@ -213,13 +221,19 @@ class BabaIsYouGrid:
         if vis_mask is None:
             vis_mask = np.ones((self.width, self.height), dtype=bool)
 
-        array = np.zeros((self.width, self.height, 3), dtype="uint8")
+        array = np.zeros((self.width, self.height, 3*self.encoding_level), dtype="uint8")
+
+        def _encode_cell_objects(i, j):
+            v_arr = np.zeros(3*self.encoding_level)
+            for idx, z in enumerate(range(1, self.encoding_level+1)):
+                v = self.get(i, j, -z)
+                v_arr[idx*3:(idx+1)*3] = self.encode_cell(v)
+            return v_arr
 
         for i in range(self.width):
             for j in range(self.height):
                 if vis_mask[i, j]:
-                    v = self.get(i, j)
-                    array[i, j] = self.encode_cell(v)
+                    array[i, j] = _encode_cell_objects(i, j)
         return array
 
     def encode_cell(self, v):
@@ -320,6 +334,9 @@ class BabaIsYouEnv(gym.Env):
             width = grid_size
             height = grid_size
 
+        # Number of objects to encode for each cell
+        self.encoding_level = kwargs.get('encoding_level', 1)
+
         # Action enumeration for this environment
         self.actions = BabaIsYouEnv.Actions
 
@@ -329,7 +346,7 @@ class BabaIsYouEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=255,
-            shape=(width, height, 3),
+            shape=(width, height, 3*self.encoding_level),
             dtype="uint8",
         )
 
@@ -348,6 +365,7 @@ class BabaIsYouEnv(gym.Env):
         self.agent_dir: int = None
         self.agent_object = 'baba'
 
+
         # Initialize the state
         self.grid = None
         self.reset()
@@ -365,6 +383,9 @@ class BabaIsYouEnv(gym.Env):
 
         # Generate a new random grid at the start of each episode
         self._gen_grid(self.width, self.height)
+
+        # Set the encoding level for the grid
+        self.grid.encoding_level = self.encoding_level
 
         # Compute the ruleset for the generated grid
         self._ruleset = extract_ruleset(self.grid)
