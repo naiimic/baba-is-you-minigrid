@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Tuple
 
 import numpy as np
@@ -51,7 +52,7 @@ class GoToObjEnv(BaseGridEnv):
     # STATE_TO_IDX = {}
 
     def __init__(self, size=8, agent_start_dir=0, rdm_rule_pos=False, rdm_ball_pos=False, rdm_agent_pos=False,
-                 push_rule_block=False, n_balls=1, **kwargs):
+                 push_rule_block=False, n_balls=1, show_rules=True, **kwargs):
         self.size = size
         self.agent_start_dir = agent_start_dir
         self.rdm_rule_pos = rdm_rule_pos
@@ -59,7 +60,15 @@ class GoToObjEnv(BaseGridEnv):
         self.rdm_agent_pos = rdm_agent_pos
         self.push_rule_block = push_rule_block
         self.n_balls = n_balls
-        super().__init__(size=size, **kwargs)
+        self.show_rules = show_rules
+        if not self.show_rules:
+            ruleset = {
+                "is_goal": {"fball": True},
+                "is_agent": {"baba": True}
+            }
+        else:
+            ruleset = {}
+        super().__init__(size=size, default_ruleset=ruleset, **kwargs)
 
     def _gen_grid(self, width, height):
         # rule blocks position
@@ -85,8 +94,9 @@ class GoToObjEnv(BaseGridEnv):
 
         # self.put_obj(FBall(), *self.ball_pos)
 
-        self.put_rule(obj='baba', property='is_agent', positions=[(1, 1), (2, 1), (3, 1)])
-        self.put_rule(obj='fball', property='is_goal', positions=self.rule_pos, can_push=self.push_rule_block)
+        if self.show_rules:
+            self.put_rule(obj='baba', property='is_agent', positions=[(1, 1), (2, 1), (3, 1)])
+            self.put_rule(obj='fball', property='is_goal', positions=self.rule_pos, can_push=self.push_rule_block)
 
         if self.rdm_ball_pos:
             for i in range(self.n_balls):
@@ -123,7 +133,7 @@ class GoToObjEnv(BaseGridEnv):
 
 
 class GoToWinObjEnv(BaseGridEnv):
-    def __init__(self, size=6, rdm_pos=False, n_walls=1, n_balls=1, rules=None, **kwargs):
+    def __init__(self, size=6, rdm_pos=False, n_walls=1, n_balls=1, rules=None, show_rules=True, **kwargs):
         self.rdm_pos = rdm_pos
         self.n_balls = n_balls
         self.n_walls = n_walls
@@ -136,8 +146,17 @@ class GoToWinObjEnv(BaseGridEnv):
         else:
             self.rules = rules
 
-
-        super().__init__(size=size, **kwargs)
+        self.show_rules = show_rules
+        if not self.show_rules:
+            # only for constant rules
+            assert len(self.rules) == 1
+            ruleset = defaultdict(dict)
+            ruleset["is_agent"]["baba"] = True
+            for k, v in self.rules[0].items():
+                ruleset[v][k] = True
+        else:
+            ruleset = {}
+        super().__init__(size=size, default_ruleset=ruleset,  **kwargs)
 
     def encode_rules(self, mode='matrix'):
         ruleset = self.get_ruleset()
@@ -173,12 +192,16 @@ class GoToWinObjEnv(BaseGridEnv):
         ball_property = self.rules[rule_idx]['fball']
         wall_property = self.rules[rule_idx]['fwall']
 
-        self.put_rule('fball', ball_property, self.rule1_pos)
-        self.put_rule('fwall', wall_property, self.rule2_pos)
-        self.put_rule(obj='baba', property='is_agent', positions=[(1, 3), (2, 3), (3, 3)])
+        if self.show_rules:
+            self.put_rule('fball', ball_property, self.rule1_pos)
+            self.put_rule('fwall', wall_property, self.rule2_pos)
+            self.put_rule(obj='baba', property='is_agent', positions=[(1, 3), (2, 3), (3, 3)])
 
         # wall_pos, ball_pos = grid_random_position(self.size, n_samples=2, margin=1,
         #                                           exclude_pos=[*self.rule1_pos, *self.rule2_pos])
+
+        n_walls = np.random.choice(self.n_walls) if isinstance(self.n_walls, list) else self.n_walls
+        n_balls = np.random.choice(self.n_balls) if isinstance(self.n_balls, list) else self.n_balls
 
         if not self.rdm_pos:
             wall_pos = (1, 4)
@@ -188,9 +211,9 @@ class GoToWinObjEnv(BaseGridEnv):
             self.put_obj(FBall(), *ball_pos)
             self.put_obj(Baba(), *baba_pos)
         else:
-            for _ in range(self.n_walls):
+            for _ in range(n_walls):
                 self.place_obj(FWall())
-            for _ in range(self.n_balls):
+            for _ in range(n_balls):
                 self.place_obj(FBall())
             self.place_obj(Baba())
 

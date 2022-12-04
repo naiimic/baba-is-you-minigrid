@@ -365,12 +365,12 @@ class BabaIsYouEnv(gym.Env):
         self.agent_dir: int = None
         self.agent_object = 'baba'
 
-
-        # Initialize the state
+        # Initialize the env
         self.grid = None
-        self.reset()
-
         self._ruleset = {}
+        self.default_ruleset = kwargs.get('default_ruleset', {})
+
+        self.reset()
 
     def get_ruleset(self):
         return self._ruleset
@@ -388,7 +388,8 @@ class BabaIsYouEnv(gym.Env):
         self.grid.encoding_level = self.encoding_level
 
         # Compute the ruleset for the generated grid
-        self._ruleset = extract_ruleset(self.grid)
+        self._ruleset = extract_ruleset(self.grid, default_ruleset=self.default_ruleset)
+
         # make the ruleset accessible to all FlexibleWorlObj (not working for objects added after reset is called)
         # for e in self.grid:
         #     if hasattr(e, "set_ruleset_getter"):
@@ -733,7 +734,7 @@ class BabaIsYouEnv(gym.Env):
 
             reward, done = self.reward()
 
-            self._ruleset = extract_ruleset(self.grid)
+            self._ruleset = extract_ruleset(self.grid, default_ruleset=self.default_ruleset)
 
         if self.step_count >= self.max_steps:
             done = True
