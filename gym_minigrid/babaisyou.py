@@ -443,7 +443,8 @@ class BabaIsYouEnv(gym.Env):
         A grid cell is represented by 2-character string, the first one for
         the object and the second one for the color.
         """
-
+        # TODO
+        return "BabaIsYouEnv"
         # Map of object types to short string
         OBJECT_TO_STR = {
             "wall": "W",

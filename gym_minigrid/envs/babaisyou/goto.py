@@ -141,7 +141,8 @@ class GoToWinObjEnv(BaseGridEnv):
             self.rules = [
                 {'fball': 'is_defeat', 'fwall': 'is_goal'},
                 {'fball': 'is_goal', 'fwall': 'is_defeat'},
-                {'fball': 'is_goal', 'fwall': 'is_goal'}
+                {'fball': 'is_goal', 'fwall': 'is_goal'},
+                {'fball': 'is_defeat', 'fwall': 'is_defeat'}
             ]
         else:
             self.rules = rules
