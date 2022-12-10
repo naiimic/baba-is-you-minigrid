@@ -26,6 +26,10 @@ def register_minigrid_envs():
         entry_point="gym_minigrid.envs.babaisyou:MoveBlockEnv"
     )
     register(
+        id="BabaIsYou-MoveObj-v0",
+        entry_point="gym_minigrid.envs.babaisyou:MoveObjEnv"
+    )
+    register(
         id="BabaIsYou-MakeRule-v0",
         entry_point="gym_minigrid.envs.babaisyou:MakeRuleEnv"
     )

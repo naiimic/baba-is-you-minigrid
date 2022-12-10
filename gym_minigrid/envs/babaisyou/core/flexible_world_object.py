@@ -21,12 +21,14 @@ properties = [
 objects = [
     'fball',
     'fwall',
+    'fdoor',
     'baba'
 ]
 
 name_mapping = {
     'fwall': 'wall',
     'fball': 'ball',
+    'fdoor': 'door',
     'can_push': 'push',
     'is_block': 'stop',
     'is_goal': 'win',
@@ -57,6 +59,21 @@ def add_color_types(color_types):
 add_color_types(name_mapping.values())
 add_object_types(objects)
 add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property'])
+
+
+def make_obj(name: str):
+    """
+    Make an object from a string name
+    """
+    # TODO: make it more general
+    if name == "fwall" or name == "wall":
+        return FWall()
+    elif name == "fball" or name == "ball":
+        return FBall()
+    elif name == "baba":
+        return Baba()
+    else:
+        raise ValueError(name)
 
 
 class RuleBlock(WorldObj):
@@ -160,6 +177,68 @@ class FBall(FlexibleWorldObj):
 
     def render(self, img):
         fill_coords(img, point_in_circle(0.5, 0.5, 0.31), COLORS[self.color])
+
+
+class FDoor(FlexibleWorldObj):
+    def __init__(self, color="red", is_open=False, is_locked=False):
+        super().__init__("fdoor", color)
+        self.is_open = is_open
+        self.is_locked = is_locked
+
+    # TODO
+    # def toggle(self, env, pos):
+    #     # If the player has the right key to open the door
+    #     if self.is_locked:
+    #         if isinstance(env.carrying, Key) and env.carrying.color == self.color:
+    #             self.is_locked = False
+    #             self.is_open = True
+    #             return True
+    #         return False
+    #
+    #     self.is_open = not self.is_open
+    #     return True
+
+    def encode(self):
+        """Encode the a description of this object as a 3-tuple of integers"""
+
+        # State, 0: open, 1: closed, 2: locked
+        if self.is_open:
+            state = 0
+        elif self.is_locked:
+            state = 2
+        # if door is closed and unlocked
+        elif not self.is_open:
+            state = 1
+        else:
+            raise ValueError(
+                f"There is no possible state encoding for the state:\n -Door Open: {self.is_open}\n -Door Closed: {not self.is_open}\n -Door Locked: {self.is_locked}"
+            )
+
+        return (OBJECT_TO_IDX[self.type], COLOR_TO_IDX[self.color], state)
+
+    def render(self, img):
+        c = COLORS[self.color]
+
+        if self.is_open:
+            fill_coords(img, point_in_rect(0.88, 1.00, 0.00, 1.00), c)
+            fill_coords(img, point_in_rect(0.92, 0.96, 0.04, 0.96), (0, 0, 0))
+            return
+
+        # Door frame and door
+        if self.is_locked:
+            fill_coords(img, point_in_rect(0.00, 1.00, 0.00, 1.00), c)
+            fill_coords(img, point_in_rect(0.06, 0.94, 0.06, 0.94), 0.45 * np.array(c))
+
+            # Draw key slot
+            fill_coords(img, point_in_rect(0.52, 0.75, 0.50, 0.56), c)
+        else:
+            fill_coords(img, point_in_rect(0.00, 1.00, 0.00, 1.00), c)
+            fill_coords(img, point_in_rect(0.04, 0.96, 0.04, 0.96), (0, 0, 0))
+            fill_coords(img, point_in_rect(0.08, 0.92, 0.08, 0.92), c)
+            fill_coords(img, point_in_rect(0.12, 0.88, 0.12, 0.88), (0, 0, 0))
+
+            # Draw door handle
+            fill_coords(img, point_in_circle(cx=0.75, cy=0.50, r=0.08), c)
 
 
 class Baba(FlexibleWorldObj):
