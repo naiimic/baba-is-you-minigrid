@@ -3,7 +3,8 @@ from gym_minigrid.envs.babaisyou.goto import (
     GoToWinObjEnv
 )
 from gym_minigrid.envs.babaisyou.move import (
-    MoveObjEnv
+    MoveObjEnv,
+    OpenShutObjEnv
 )
 from gym_minigrid.envs.babaisyou.changerule import (
     ChangeRuleEnv,

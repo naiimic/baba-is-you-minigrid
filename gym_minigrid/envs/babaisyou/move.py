@@ -47,3 +47,67 @@ class MoveObjEnv(BabaIsYouEnv):
             return self._reward(), True
         else:
             return 0, False
+
+
+class OpenShutObjEnv(BabaIsYouEnv):
+    object_names = ["fball", "fwall", "fkey", "fdoor"]
+
+    def __init__(self, open_objects: list[str] = None, shut_objects: list[str] = None, size=8, **kwargs):
+        open_objects = self.object_names if open_objects is None else open_objects
+        shut_objects = self.object_names if shut_objects is None else shut_objects
+        self.open_objects = {name: make_obj(name) for name in open_objects}
+        self.shut_objects = {name: self.open_objects.get(name, make_obj(name)) for name in shut_objects}
+        self.all_objects = {**self.open_objects, **self.shut_objects}
+
+        default_ruleset = {
+            "is_agent": {"baba": True},
+            # "can_push": {obj: True for obj in self.object_names}
+        }
+
+        self.size = size
+        super().__init__(grid_size=self.size, max_steps=4*self.size*self.size, default_ruleset=default_ruleset, **kwargs)
+
+    def _gen_grid(self, width, height):
+        self.grid = BabaIsYouGrid(width, height)
+        self.grid.wall_rect(0, 0, width, height)
+
+        # sample open and shut objects
+        open_obj_name = np.random.choice(list(self.open_objects.keys()))
+        # ensure that shut obj is different from open obj
+        shut_objects = dict(self.shut_objects)
+        if open_obj_name in shut_objects:
+            del shut_objects[open_obj_name]
+        shut_obj_name = np.random.choice(list(shut_objects.keys()))
+
+        self.open_obj = self.open_objects[open_obj_name]
+        self.shut_obj = self.shut_objects[shut_obj_name]
+
+        # open and push rules
+        self.put_obj(RuleObject(open_obj_name), 1, 1)
+        self.put_obj(RuleIs(), 2, 1)
+        self.put_obj(RuleProperty('can_push'), 3, 1)
+        # self.put_obj(RuleProperty('is_open'), 3, 1)
+
+        # self.put_obj(RuleObject(open_obj_name), 4, 1)
+        # self.put_obj(RuleIs(), 5, 1)
+        # self.put_obj(RuleProperty('can_push'), 6, 1)
+
+        # shut rule
+        self.put_obj(RuleObject(shut_obj_name), 1, 2)
+        self.put_obj(RuleIs(), 2, 2)
+        self.put_obj(RuleProperty('is_shut'), 3, 2)
+
+        for name, obj in self.all_objects.items():
+            pos = self.place_obj(obj, top=(2, 2), size=[self.size-4, self.size-4])
+            if name == open_obj_name:
+                self.open_obj_pos = pos
+            elif name == shut_obj_name:
+                self.shut_obj_pos = pos
+        self.place_obj(Baba())
+        self.place_agent()
+
+    def reward(self):
+        if self.grid.get(*self.shut_obj_pos) == self.open_obj:
+            return self._reward(), True
+        else:
+            return 0, False

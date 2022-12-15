@@ -15,13 +15,16 @@ properties = [
     'is_defeat',
     'is_agent',
     'is_pull',
-    'is_move'
+    'is_move',
+    'is_open',
+    'is_shut'
 ]
 
 objects = [
     'fball',
     'fwall',
     'fdoor',
+    "fkey",
     'baba'
 ]
 
@@ -29,6 +32,7 @@ name_mapping = {
     'fwall': 'wall',
     'fball': 'ball',
     'fdoor': 'door',
+    'fkey': 'key',
     'can_push': 'push',
     'is_block': 'stop',
     'is_goal': 'win',
@@ -36,7 +40,9 @@ name_mapping = {
     'is': 'is',
     'is_agent': 'you',
     'is_pull': 'pull',
-    'is_move': 'move'
+    'is_move': 'move',
+    'is_open': 'open',
+    'is_shut': 'shut'
 }
 # by default, add the displayed name is the type of the object
 name_mapping.update({o: o for o in objects if o not in name_mapping})
@@ -70,6 +76,10 @@ def make_obj(name: str):
         return FWall()
     elif name == "fball" or name == "ball":
         return FBall()
+    elif name == "fkey" or name == "key":
+        return FKey()
+    elif name == "fdoor" or name == "door":
+        return FDoor()
     elif name == "baba":
         return Baba()
     else:
@@ -180,65 +190,44 @@ class FBall(FlexibleWorldObj):
 
 
 class FDoor(FlexibleWorldObj):
-    def __init__(self, color="red", is_open=False, is_locked=False):
+    def __init__(self, color="red"):
         super().__init__("fdoor", color)
-        self.is_open = is_open
-        self.is_locked = is_locked
-
-    # TODO
-    # def toggle(self, env, pos):
-    #     # If the player has the right key to open the door
-    #     if self.is_locked:
-    #         if isinstance(env.carrying, Key) and env.carrying.color == self.color:
-    #             self.is_locked = False
-    #             self.is_open = True
-    #             return True
-    #         return False
-    #
-    #     self.is_open = not self.is_open
-    #     return True
 
     def encode(self):
         """Encode the a description of this object as a 3-tuple of integers"""
-
-        # State, 0: open, 1: closed, 2: locked
-        if self.is_open:
-            state = 0
-        elif self.is_locked:
-            state = 2
-        # if door is closed and unlocked
-        elif not self.is_open:
-            state = 1
-        else:
-            raise ValueError(
-                f"There is no possible state encoding for the state:\n -Door Open: {self.is_open}\n -Door Closed: {not self.is_open}\n -Door Locked: {self.is_locked}"
-            )
-
+        # TODO: don't need to encode the state
+        state = 0
         return (OBJECT_TO_IDX[self.type], COLOR_TO_IDX[self.color], state)
 
     def render(self, img):
         c = COLORS[self.color]
 
-        if self.is_open:
-            fill_coords(img, point_in_rect(0.88, 1.00, 0.00, 1.00), c)
-            fill_coords(img, point_in_rect(0.92, 0.96, 0.04, 0.96), (0, 0, 0))
-            return
+        fill_coords(img, point_in_rect(0.00, 1.00, 0.00, 1.00), c)
+        fill_coords(img, point_in_rect(0.04, 0.96, 0.04, 0.96), (0, 0, 0))
+        fill_coords(img, point_in_rect(0.08, 0.92, 0.08, 0.92), c)
+        fill_coords(img, point_in_rect(0.12, 0.88, 0.12, 0.88), (0, 0, 0))
 
-        # Door frame and door
-        if self.is_locked:
-            fill_coords(img, point_in_rect(0.00, 1.00, 0.00, 1.00), c)
-            fill_coords(img, point_in_rect(0.06, 0.94, 0.06, 0.94), 0.45 * np.array(c))
+        # Draw door handle
+        fill_coords(img, point_in_circle(cx=0.75, cy=0.50, r=0.08), c)
 
-            # Draw key slot
-            fill_coords(img, point_in_rect(0.52, 0.75, 0.50, 0.56), c)
-        else:
-            fill_coords(img, point_in_rect(0.00, 1.00, 0.00, 1.00), c)
-            fill_coords(img, point_in_rect(0.04, 0.96, 0.04, 0.96), (0, 0, 0))
-            fill_coords(img, point_in_rect(0.08, 0.92, 0.08, 0.92), c)
-            fill_coords(img, point_in_rect(0.12, 0.88, 0.12, 0.88), (0, 0, 0))
 
-            # Draw door handle
-            fill_coords(img, point_in_circle(cx=0.75, cy=0.50, r=0.08), c)
+class FKey(FlexibleWorldObj):
+    def __init__(self, color="blue"):
+        super().__init__("fkey", color)
+
+    def render(self, img):
+        c = COLORS[self.color]
+
+        # Vertical quad
+        fill_coords(img, point_in_rect(0.50, 0.63, 0.31, 0.88), c)
+
+        # Teeth
+        fill_coords(img, point_in_rect(0.38, 0.50, 0.59, 0.66), c)
+        fill_coords(img, point_in_rect(0.38, 0.50, 0.81, 0.88), c)
+
+        # Ring
+        fill_coords(img, point_in_circle(cx=0.56, cy=0.28, r=0.190), c)
+        fill_coords(img, point_in_circle(cx=0.56, cy=0.28, r=0.064), (0, 0, 0))
 
 
 class Baba(FlexibleWorldObj):
