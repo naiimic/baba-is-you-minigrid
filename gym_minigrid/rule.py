@@ -56,11 +56,13 @@ def inside_grid(grid, pos):
     return inside_grid
 
 
-def extract_ruleset(grid):
+def extract_ruleset(grid, default_ruleset=None):
     """
     Construct the ruleset from the grid. Called every time a RuleBlock is pushed.
     """
     ruleset = defaultdict(dict)
+    ruleset.update(default_ruleset) if default_ruleset is not None else None
+
     # loop through all 'is' blocks
     # for k, e in enumerate(grid.grid):
     if not isinstance(grid, Iterable):

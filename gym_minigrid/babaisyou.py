@@ -80,11 +80,29 @@ class BabaIsYouGrid:
             # stack objects
             self.grid[idx].append(v)
 
-    def get(self, i, j):
-        assert i >= 0 and i < self.width
-        assert j >= 0 and j < self.height
+    def get(self, i, j, z=-1):
+        """
+        Args:
+            z: return the object at the top if -1
+        """
+        assert 0 <= i < self.width
+        assert 0 <= j < self.height
 
-        return self.grid[j * self.width + i][-1]
+        min_len = z+1 if z >= 0 else -z
+        if len(self.grid[j * self.width + i]) <= min_len:
+            return None
+
+        return self.grid[j * self.width + i][z]
+
+    def get_under(self, i, j):
+        # return the second object in the cell
+        assert 0 <= i < self.width
+        assert 0 <= j < self.height
+
+        if len(self.grid[j * self.width + i]) <= 1:
+            return None
+        else:
+            return self.grid[j * self.width + i][-2]
 
     def __iter__(self):
         for elem in self.grid.__iter__():
@@ -203,22 +221,26 @@ class BabaIsYouGrid:
         if vis_mask is None:
             vis_mask = np.ones((self.width, self.height), dtype=bool)
 
-        array = np.zeros((self.width, self.height, 3), dtype="uint8")
+        array = np.zeros((self.width, self.height, 3*self.encoding_level), dtype="uint8")
+
+        def _encode_cell_objects(i, j):
+            v_arr = np.zeros(3*self.encoding_level)
+            for idx, z in enumerate(range(1, self.encoding_level+1)):
+                v = self.get(i, j, -z)
+                v_arr[idx*3:(idx+1)*3] = self.encode_cell(v)
+            return v_arr
 
         for i in range(self.width):
             for j in range(self.height):
                 if vis_mask[i, j]:
-                    v = self.get(i, j)
-
-                    if v is None:
-                        array[i, j, 0] = OBJECT_TO_IDX["empty"]
-                        array[i, j, 1] = 0
-                        array[i, j, 2] = 0
-
-                    else:
-                        array[i, j, :] = v.encode()
-
+                    array[i, j] = _encode_cell_objects(i, j)
         return array
+
+    def encode_cell(self, v):
+        if v is None:
+            return np.array([OBJECT_TO_IDX["empty"], 0, 0])
+        else:
+            return v.encode()
 
     @staticmethod
     def decode(array):
@@ -312,6 +334,9 @@ class BabaIsYouEnv(gym.Env):
             width = grid_size
             height = grid_size
 
+        # Number of objects to encode for each cell
+        self.encoding_level = kwargs.get('encoding_level', 1)
+
         # Action enumeration for this environment
         self.actions = BabaIsYouEnv.Actions
 
@@ -321,7 +346,7 @@ class BabaIsYouEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=255,
-            shape=(width, height, 3),
+            shape=(width, height, 3*self.encoding_level),
             dtype="uint8",
         )
 
@@ -340,11 +365,12 @@ class BabaIsYouEnv(gym.Env):
         self.agent_dir: int = None
         self.agent_object = 'baba'
 
-        # Initialize the state
+        # Initialize the env
         self.grid = None
-        self.reset()
-
         self._ruleset = {}
+        self.default_ruleset = kwargs.get('default_ruleset', {})
+
+        self.reset()
 
     def get_ruleset(self):
         return self._ruleset
@@ -358,8 +384,12 @@ class BabaIsYouEnv(gym.Env):
         # Generate a new random grid at the start of each episode
         self._gen_grid(self.width, self.height)
 
+        # Set the encoding level for the grid
+        self.grid.encoding_level = self.encoding_level
+
         # Compute the ruleset for the generated grid
-        self._ruleset = extract_ruleset(self.grid)
+        self._ruleset = extract_ruleset(self.grid, default_ruleset=self.default_ruleset)
+
         # make the ruleset accessible to all FlexibleWorlObj (not working for objects added after reset is called)
         # for e in self.grid:
         #     if hasattr(e, "set_ruleset_getter"):
@@ -413,7 +443,8 @@ class BabaIsYouEnv(gym.Env):
         A grid cell is represented by 2-character string, the first one for
         the object and the second one for the color.
         """
-
+        # TODO
+        return "BabaIsYouEnv"
         # Map of object types to short string
         OBJECT_TO_STR = {
             "wall": "W",
@@ -675,6 +706,7 @@ class BabaIsYouEnv(gym.Env):
                 if e is not None and (e.is_agent() or e.is_move()):
                     e.has_moved = False
 
+            # TODO: stack objects if both agent and another character are pushing objects on the same cell at the same time
             # movements = []
             # the agent moves first
             for k, e in enumerate(self.grid):
@@ -684,6 +716,7 @@ class BabaIsYouEnv(gym.Env):
                     new_pos, is_win, is_lose = self.move(pos, self.dir_vec)
                     # movements.append((pos, new_pos))
                     e.has_moved = True
+                    self.agent_pos = new_pos  # TODO: works when the agent is just one cell in the env
 
             # move other objects
             for k, e in enumerate(self.grid):
@@ -696,14 +729,13 @@ class BabaIsYouEnv(gym.Env):
             # for (pos, new_pos) in movements:
             #     self.change_obj_pos(pos, new_pos)
 
-            if is_win:
-                done = True
-                reward = self._reward()
-            elif is_lose:
-                done = True
-                reward = -1
+            # win/lose based on the rules active in the env
+            self.is_win = is_win
+            self.is_lose = is_lose
 
-            self._ruleset = extract_ruleset(self.grid)
+            reward, done = self.reward()
+
+            self._ruleset = extract_ruleset(self.grid, default_ruleset=self.default_ruleset)
 
         if self.step_count >= self.max_steps:
             done = True
@@ -711,6 +743,18 @@ class BabaIsYouEnv(gym.Env):
         obs = self.gen_obs()
 
         return obs, reward, done, {}
+
+    def reward(self):
+        if self.is_win:
+            done = True
+            reward = self._reward()
+        elif self.is_lose:
+            done = True
+            reward = -1
+        else:
+            done = False
+            reward = 0
+        return reward, done
 
     def gen_obs(self):
         return self.grid.encode()

@@ -15,18 +15,24 @@ properties = [
     'is_defeat',
     'is_agent',
     'is_pull',
-    'is_move'
+    'is_move',
+    'is_open',
+    'is_shut'
 ]
 
 objects = [
     'fball',
     'fwall',
+    'fdoor',
+    "fkey",
     'baba'
 ]
 
 name_mapping = {
     'fwall': 'wall',
     'fball': 'ball',
+    'fdoor': 'door',
+    'fkey': 'key',
     'can_push': 'push',
     'is_block': 'stop',
     'is_goal': 'win',
@@ -34,7 +40,9 @@ name_mapping = {
     'is': 'is',
     'is_agent': 'you',
     'is_pull': 'pull',
-    'is_move': 'move'
+    'is_move': 'move',
+    'is_open': 'open',
+    'is_shut': 'shut'
 }
 # by default, add the displayed name is the type of the object
 name_mapping.update({o: o for o in objects if o not in name_mapping})
@@ -57,6 +65,25 @@ def add_color_types(color_types):
 add_color_types(name_mapping.values())
 add_object_types(objects)
 add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property'])
+
+
+def make_obj(name: str):
+    """
+    Make an object from a string name
+    """
+    # TODO: make it more general
+    if name == "fwall" or name == "wall":
+        return FWall()
+    elif name == "fball" or name == "ball":
+        return FBall()
+    elif name == "fkey" or name == "key":
+        return FKey()
+    elif name == "fdoor" or name == "door":
+        return FDoor()
+    elif name == "baba":
+        return Baba()
+    else:
+        raise ValueError(name)
 
 
 class RuleBlock(WorldObj):
@@ -160,6 +187,47 @@ class FBall(FlexibleWorldObj):
 
     def render(self, img):
         fill_coords(img, point_in_circle(0.5, 0.5, 0.31), COLORS[self.color])
+
+
+class FDoor(FlexibleWorldObj):
+    def __init__(self, color="red"):
+        super().__init__("fdoor", color)
+
+    def encode(self):
+        """Encode the a description of this object as a 3-tuple of integers"""
+        # TODO: don't need to encode the state
+        state = 0
+        return (OBJECT_TO_IDX[self.type], COLOR_TO_IDX[self.color], state)
+
+    def render(self, img):
+        c = COLORS[self.color]
+
+        fill_coords(img, point_in_rect(0.00, 1.00, 0.00, 1.00), c)
+        fill_coords(img, point_in_rect(0.04, 0.96, 0.04, 0.96), (0, 0, 0))
+        fill_coords(img, point_in_rect(0.08, 0.92, 0.08, 0.92), c)
+        fill_coords(img, point_in_rect(0.12, 0.88, 0.12, 0.88), (0, 0, 0))
+
+        # Draw door handle
+        fill_coords(img, point_in_circle(cx=0.75, cy=0.50, r=0.08), c)
+
+
+class FKey(FlexibleWorldObj):
+    def __init__(self, color="blue"):
+        super().__init__("fkey", color)
+
+    def render(self, img):
+        c = COLORS[self.color]
+
+        # Vertical quad
+        fill_coords(img, point_in_rect(0.50, 0.63, 0.31, 0.88), c)
+
+        # Teeth
+        fill_coords(img, point_in_rect(0.38, 0.50, 0.59, 0.66), c)
+        fill_coords(img, point_in_rect(0.38, 0.50, 0.81, 0.88), c)
+
+        # Ring
+        fill_coords(img, point_in_circle(cx=0.56, cy=0.28, r=0.190), c)
+        fill_coords(img, point_in_circle(cx=0.56, cy=0.28, r=0.064), (0, 0, 0))
 
 
 class Baba(FlexibleWorldObj):
