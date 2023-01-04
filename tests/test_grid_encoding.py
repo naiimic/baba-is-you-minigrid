@@ -1,10 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from gym_minigrid.babaisyou import BabaIsYouGrid
-from gym_minigrid.envs.babaisyou.core.flexible_world_object import FBall, Baba
-from gym_minigrid.envs.babaisyou.goto import BaseGridEnv
-
+from gym_minigrid import BabaIsYouGrid
+from gym_minigrid.envs.core.flexible_world_object import FBall, Baba
+from gym_minigrid.envs.goto import BaseGridEnv
 
 class TestEnv(BaseGridEnv):
     def __init__(self, ball_pos, baba_pos, size=8, **kwargs):

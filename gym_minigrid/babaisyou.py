@@ -24,7 +24,6 @@ from gym_minigrid.rendering import (
 from gym_minigrid.window import Window
 from gym_minigrid.rule import extract_ruleset
 
-
 def rand_int(low, high):
     """
     Generate random integer in [low,high[
@@ -32,7 +31,6 @@ def rand_int(low, high):
     # TODO: seed
     # return np_random.integers(low, high)
     return np.random.randint(low, high)
-
 
 class BabaIsYouGrid:
     """

@@ -1,7 +1,6 @@
-from gym_minigrid.babaisyou import BabaIsYouGrid
-from gym_minigrid.envs.babaisyou.core.flexible_world_object import FBall, Baba, FWall
-from gym_minigrid.envs.babaisyou.goto import BaseGridEnv
-
+from gym_minigrid import BabaIsYouGrid
+from gym_minigrid.envs.core.flexible_world_object import FBall, Baba, FWall
+from gym_minigrid.envs.goto import BaseGridEnv
 
 class TestWinLoseEnv(BaseGridEnv):
     def __init__(self, size=8, is_lose=False, **kwargs):
