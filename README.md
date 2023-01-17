@@ -1,7 +1,5 @@
 # MiniGrid for BabaIsYou
 
-Ciao Nathan :)
-
 ## Installation
 
 To get the latest version of BabaIsYou Minigrid, you can clone this repository and install the dependencies with `pip3`:
